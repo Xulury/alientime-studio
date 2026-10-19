@@ -8,6 +8,7 @@ interface AuthCtx {
   refresh: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   setup: (username: string, password: string, displayName: string) => Promise<void>;
+  register: (username: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -45,13 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCsrf(s.csrf_token);
     setState({ ...s, setup_required: false });
   };
+  const register = async (username: string, password: string, display_name: string) => {
+    const s = await post<AuthState>("/api/auth/register", { username, password, display_name });
+    setCsrf(s.csrf_token);
+    setState({ ...s, setup_required: false });
+  };
   const logout = async () => {
     await post("/api/auth/logout");
     setCsrf(null);
     qc.clear();
     setState({ authenticated: false, setup_required: false, user: null, csrf_token: null });
   };
-  return <Ctx.Provider value={{ state, refresh, login, setup, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ state, refresh, login, setup, register, logout }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

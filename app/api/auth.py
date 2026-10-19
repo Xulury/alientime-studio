@@ -40,6 +40,12 @@ class SetupIn(BaseModel):
     setup_token: str | None = None
 
 
+class RegisterIn(BaseModel):
+    username: str = Field(min_length=2, max_length=80, pattern=r"^[A-Za-z0-9_.@-]+$")
+    display_name: str = Field(default="", max_length=120)
+    password: str = Field(min_length=1, max_length=256)
+
+
 class PasswordIn(BaseModel):
     current_password: str
     new_password: str = Field(max_length=256)
@@ -111,6 +117,30 @@ def setup(body: SetupIn, request: Request, response: Response, db: Session = Dep
         raise AppError(problem, code="weak_password")
     user = User(username=body.username.strip(), display_name=body.display_name.strip(),
                 password_hash=hash_password(body.password), password_changed_at=utcnow(), last_login_at=utcnow())
+    db.add(user)
+    db.flush()
+    sess = _start_session(db, response, user, request)
+    audit.record(db, f"user:{user.username}", "account_created", "Studio account created", ip=client_ip(request))
+    db.commit()
+    return {"authenticated": True, "user": _user_view(user), "csrf_token": sess.csrf_token}
+
+
+@router.post("/register")
+def register(body: RegisterIn, request: Request, response: Response, db: Session = Depends(get_db)) -> dict:
+    existing = db.scalar(select(User).where(func.lower(User.username) == body.username.strip().lower()))
+    if existing:
+        raise AppError("That username is already taken.", code="username_taken", status_code=400)
+    problem = password_problem(body.password)
+    if problem:
+        raise AppError(problem, code="weak_password")
+    user = User(
+        username=body.username.strip(),
+        display_name=body.display_name.strip(),
+        password_hash=hash_password(body.password),
+        password_changed_at=utcnow(),
+        last_login_at=utcnow(),
+        role="owner" if _user_count(db) == 0 else "user",
+    )
     db.add(user)
     db.flush()
     sess = _start_session(db, response, user, request)

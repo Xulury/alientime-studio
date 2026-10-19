@@ -37,30 +37,119 @@ function Shell({ children, title, sub }: { children: ReactNode; title: string; s
 }
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [repeat, setRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const isRegister = mode === "register";
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isRegister && password !== repeat) {
+      return setError("The two passwords do not match.");
+    }
     setBusy(true);
     setError(null);
     try {
-      await login(username, password);
+      if (isRegister) {
+        await register(username, password, name);
+      } else {
+        await login(username, password);
+      }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
   };
+
   return (
-    <Shell title="Sign in" sub="Use the studio account set up on this computer.">
+    <Shell
+      title={isRegister ? "Create account" : "Sign in"}
+      sub={
+        isRegister
+          ? "Set up an account to access the studio and inventory."
+          : "Use the studio account set up on this computer."
+      }
+    >
       <form onSubmit={submit} className="space-y-4">
-        <TextInput label="Username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-        <TextInput label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {isRegister && (
+          <TextInput
+            label="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Matthew"
+          />
+        )}
+        <TextInput
+          label="Username"
+          autoComplete="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          autoFocus
+          pattern={isRegister ? "[A-Za-z0-9_.@\\-]+" : undefined}
+          hint={isRegister ? "Letters, numbers, dots, dashes." : undefined}
+        />
+        <TextInput
+          label="Password"
+          type="password"
+          autoComplete={isRegister ? "new-password" : "current-password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          hint={isRegister ? "At least 10 characters. A short sentence works well." : undefined}
+        />
+        {isRegister && (
+          <TextInput
+            label="Repeat password"
+            type="password"
+            autoComplete="new-password"
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value)}
+            required
+          />
+        )}
         {error && <Notice tone="danger">{error}</Notice>}
-        <Button variant="primary" size="lg" className="w-full" loading={busy} type="submit">Sign in</Button>
+        <Button variant="primary" size="lg" className="w-full" loading={busy} type="submit">
+          {isRegister ? "Create account" : "Sign in"}
+        </Button>
+        <div className="pt-2 text-center text-[13.5px] text-steel">
+          {isRegister ? (
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError(null);
+                }}
+                className="text-velvet hover:underline font-medium cursor-pointer"
+              >
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              Need another login?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("register");
+                  setError(null);
+                }}
+                className="text-velvet hover:underline font-medium cursor-pointer"
+              >
+                Create new account
+              </button>
+            </>
+          )}
+        </div>
       </form>
     </Shell>
   );

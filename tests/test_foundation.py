@@ -27,6 +27,19 @@ def test_first_run_setup_then_login_logout(anon):
     assert anon.get("/api/watches").status_code == 200
 
 
+def test_register_new_account(anon):
+    # Registration works even when another user exists
+    r = anon.post("/api/auth/register", json={"username": "alice", "display_name": "Alice", "password": PASSWORD})
+    assert r.status_code == 200
+    assert r.json()["user"]["username"] == "alice"
+    # Duplicate username is rejected
+    r_dup = anon.post("/api/auth/register", json={"username": "alice", "password": PASSWORD})
+    assert r_dup.status_code == 400 and r_dup.json()["error"]["code"] == "username_taken"
+    # Weak password rejected
+    r_weak = anon.post("/api/auth/register", json={"username": "bob", "password": "123"})
+    assert r_weak.status_code == 400 and r_weak.json()["error"]["code"] == "weak_password"
+
+
 def test_password_hash_is_not_plaintext(studio):
     from app.db.base import SessionLocal
     from app.db.models import User

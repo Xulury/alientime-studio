@@ -98,11 +98,12 @@ class SecurityHeaders(BaseHTTPMiddleware):
 class PrefixNormalizationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if not path.startswith("/api/") and any(
-            path.startswith(f"/{prefix}")
-            for prefix in ("auth", "system", "watches", "assets", "listings", "review", "publishing", "config", "webhooks", "debug", "health")
-        ):
-            request.scope["path"] = f"/api{path}"
+        if not path.startswith("/api/") and not path.startswith("/assets/"):
+            if any(
+                path.startswith(f"/{prefix}")
+                for prefix in ("auth", "system", "watches", "listings", "review", "publishing", "config", "webhooks", "debug", "health")
+            ):
+                request.scope["path"] = f"/api{path}"
         return await call_next(request)
 
 

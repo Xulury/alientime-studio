@@ -1,0 +1,27 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets and private data — never commit
+.env
+.env.*
+!.env.example
+data/
+backups/
+*.db
+*.db-shm
+*.db-wal
+service-account*.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

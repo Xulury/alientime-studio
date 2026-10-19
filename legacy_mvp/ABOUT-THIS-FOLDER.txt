@@ -1,0 +1,4 @@
+The original Development MVP, moved here unchanged on 19 Oct 2026 when the full studio replaced it.
+Nothing in the new studio uses these files. If an old MVP database (data/studio.db) is found on first start, the new
+studio backs it up and imports its watches, photos, drafts and audit entries automatically.
+You can delete this folder once you are happy with the new studio.

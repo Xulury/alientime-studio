@@ -1,0 +1,8 @@
+{# Shared macros. Templates only use confirmed facts passed in `f`. #}
+{% macro name() -%}{{ f.brand }} {{ f.model }}{% endmacro %}
+{% macro name_ref() -%}{{ f.name_ref }}{% endmacro %}
+{% macro intro() -%}
+{{ name() }}{% if f.reference %}, reference {{ f.reference }}{% endif %}{% if f.year and f.year|lower != 'unknown' %}, from {{ f.year }}{% endif %}.
+{%- if f.calibre %} Powered by calibre {{ f.calibre }}.{% endif %}
+{%- endmacro %}
+{% macro notes() -%}{% if f.description %}{{ f.description }}{% endif %}{%- endmacro %}

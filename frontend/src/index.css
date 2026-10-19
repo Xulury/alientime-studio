@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+/*
+  Alien Time Listing Studio — design tokens
+  Paper & steel neutrals, one accent taken from the house velvet backdrop, brass only for "needs you".
+  Display: Instrument Serif (watch names, page titles). UI: Instrument Sans with tabular figures.
+*/
+@theme {
+  --color-paper: #f4f5f3;
+  --color-surface: #ffffff;
+  --color-ink: #1d2421;
+  --color-ink-2: #39423e;
+  --color-steel: #69726e;
+  --color-steel-2: #8a928e;
+  --color-line: #e2e5e2;
+  --color-line-strong: #cdd2ce;
+  --color-wash: #eef0ed;
+
+  --color-velvet: #1e4d3a;
+  --color-velvet-700: #163a2c;
+  --color-velvet-100: #dbe8e0;
+  --color-velvet-50: #edf4ef;
+
+  --color-brass: #8f6c33;
+  --color-brass-100: #efe3cc;
+  --color-brass-50: #f8f2e6;
+
+  --color-danger: #a3392b;
+  --color-danger-50: #f9ebe8;
+  --color-info: #3e5c76;
+  --color-info-50: #e9eff4;
+
+  --color-stage: #121614;
+  --color-stage-2: #1b211e;
+  --color-stage-3: #252d29;
+  --color-stage-line: #323b37;
+
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+
+  --radius-sm: 4px;
+  --radius-md: 7px;
+  --radius-lg: 11px;
+  --shadow-panel: 0 1px 0 rgb(29 36 33 / 0.04), 0 8px 24px -16px rgb(29 36 33 / 0.18);
+  --shadow-pop: 0 18px 50px -20px rgb(18 22 20 / 0.45);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--color-velvet-100);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-velvet);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  input, textarea, select, button {
+    font: inherit;
+    color: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+  .field {
+    width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    min-height: 36px;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .field:hover {
+    border-color: var(--color-steel-2);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-velvet);
+    box-shadow: 0 0 0 3px var(--color-velvet-50);
+  }
+  .field:disabled {
+    background: var(--color-wash);
+    color: var(--color-steel);
+  }
+  .field-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 550;
+    color: var(--color-ink-2);
+    margin-bottom: 5px;
+  }
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+  }
+  .checker {
+    background-color: #e9ebe9;
+    background-image:
+      linear-gradient(45deg, #d7dbd8 25%, transparent 25%),
+      linear-gradient(-45deg, #d7dbd8 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #d7dbd8 75%),
+      linear-gradient(-45deg, transparent 75%, #d7dbd8 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+  .checker-dark {
+    background-color: #1f2623;
+    background-image:
+      linear-gradient(45deg, #29312d 25%, transparent 25%),
+      linear-gradient(-45deg, #29312d 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #29312d 75%),
+      linear-gradient(-45deg, transparent 75%, #29312d 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+  }
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.animate-indeterminate {
+  animation: indeterminate 1.4s ease-in-out infinite;
+}

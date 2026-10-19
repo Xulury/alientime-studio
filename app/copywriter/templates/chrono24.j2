@@ -1,0 +1,7 @@
+{% import '_base.j2' as b with context %}
+{% macro title() -%}{{ b.name_ref() }}{% if f.year and f.year|lower != 'unknown' %} ({{ f.year }}){% endif %}{%- endmacro %}
+{% macro body() -%}
+{{ b.intro() }}
+
+{{ b.notes() }}
+{%- endmacro %}

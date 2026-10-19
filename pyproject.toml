@@ -1,0 +1,26 @@
+[project]
+name = "alien-time-listing-studio"
+version = "1.0.0"
+description = "Private AI listing studio for Alien Time: studio photography, listing copy, review and publishing."
+requires-python = ">=3.12"
+readme = "README.md"
+
+[project.scripts]
+studio = "app.cli:main"
+studio-agent = "app.hermes.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+markers = [
+    "ocr: needs the local OCR engine (rapidocr_onnxruntime)",
+    "segmentation_model: needs the rembg model download",
+    "slow: slower image-processing tests",
+]

@@ -47,6 +47,12 @@ def get_engine() -> Engine:
             kwargs: dict = {"future": True, "pool_pre_ping": True}
             if url.startswith("sqlite"):
                 kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
+            elif "postgresql" in url or "postgres" in url:
+                from sqlalchemy.pool import NullPool
+
+                kwargs["poolclass"] = NullPool
+                kwargs["connect_args"] = {"prepare_threshold": None}
+                kwargs["execution_options"] = {"compiled_cache": None}
             _engine = create_engine(url, **kwargs)
             if url.startswith("sqlite"):
                 event.listen(_engine, "connect", _sqlite_pragmas)

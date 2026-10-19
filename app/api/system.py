@@ -21,12 +21,52 @@ from app.ingest.sources import IncomingFile, available_sources
 from app.jobs import queue
 from app.review.approvals import approval_valid, enabled_channels
 
+import os
+import traceback
+from sqlalchemy import text
+from app.db.models import User
+
 router = APIRouter(prefix="/api", tags=["system"])
 
 
 @router.get("/health")
-def health() -> dict:
-    return {"status": "ok"}
+def health(db: Session = Depends(get_db)) -> dict:
+    db_status = "connected"
+    try:
+        db.execute(text("SELECT 1")).scalar()
+    except Exception as exc:
+        db_status = f"error: {type(exc).__name__}: {str(exc)}"
+
+    return {
+        "status": "ok" if db_status == "connected" else "degraded",
+        "database": db_status,
+        "environment": {
+            "vercel": bool(os.environ.get("VERCEL")),
+            "database_url_set": bool(os.environ.get("DATABASE_URL")),
+            "supabase_url_set": bool(os.environ.get("SUPABASE_URL")),
+        },
+    }
+
+
+@router.get("/debug/db")
+def debug_db(db: Session = Depends(get_db)) -> dict:
+    try:
+        row = db.execute(text("SELECT current_database(), current_user, version()")).fetchone()
+        user_count = db.scalar(select(func.count()).select_from(User)) or 0
+        return {
+            "success": True,
+            "database": row[0] if row else None,
+            "user": row[1] if row else None,
+            "version": row[2][:50] if row else None,
+            "user_count": user_count,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+            "traceback": traceback.format_exc(),
+        }
 
 
 @router.get("/dashboard")

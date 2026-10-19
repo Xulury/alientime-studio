@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import (
     JSON,
@@ -45,10 +45,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), default="owner")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    last_login_at: Mapped[datetime | None] = mapped_column(DateTime)
-    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    password_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     failed_login_count: Mapped[int] = mapped_column(Integer, default=0)
-    locked_until: Mapped[datetime | None] = mapped_column(DateTime)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 
 class UserSession(Base):
@@ -60,8 +60,8 @@ class UserSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    ip: Mapped[str | None] = mapped_column(String(64))
-    user_agent: Mapped[str | None] = mapped_column(String(255))
+    ip: Mapped[Optional[str]] = mapped_column(String(64))
+    user_agent: Mapped[Optional[str]] = mapped_column(String(255))
 
     user: Mapped[User] = relationship()
 
@@ -77,9 +77,9 @@ class ApiToken(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     scopes: Mapped[list[str]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    created_by: Mapped[str | None] = mapped_column(String(80))
-    last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_by: Mapped[Optional[str]] = mapped_column(String(80))
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 
 # ------------------------------------------------------------------------------------------------
@@ -93,24 +93,24 @@ class SpecRecord(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     brand: Mapped[str] = mapped_column(String(120), nullable=False)
     model: Mapped[str] = mapped_column(String(200), nullable=False)
-    reference: Mapped[str | None] = mapped_column(String(120), index=True)
-    calibre: Mapped[str | None] = mapped_column(String(120))
-    movement_type: Mapped[str | None] = mapped_column(String(80))
-    case_size_mm: Mapped[str | None] = mapped_column(String(40))
-    case_thickness_mm: Mapped[str | None] = mapped_column(String(40))
-    case_material: Mapped[str | None] = mapped_column(String(120))
-    dial: Mapped[str | None] = mapped_column(String(200))
-    bezel: Mapped[str | None] = mapped_column(String(200))
-    crystal: Mapped[str | None] = mapped_column(String(120))
-    water_resistance: Mapped[str | None] = mapped_column(String(80))
-    power_reserve: Mapped[str | None] = mapped_column(String(80))
-    bracelet_strap: Mapped[str | None] = mapped_column(String(200))
-    functions: Mapped[str | None] = mapped_column(String(300))
+    reference: Mapped[Optional[str]] = mapped_column(String(120), index=True)
+    calibre: Mapped[Optional[str]] = mapped_column(String(120))
+    movement_type: Mapped[Optional[str]] = mapped_column(String(80))
+    case_size_mm: Mapped[Optional[str]] = mapped_column(String(40))
+    case_thickness_mm: Mapped[Optional[str]] = mapped_column(String(40))
+    case_material: Mapped[Optional[str]] = mapped_column(String(120))
+    dial: Mapped[Optional[str]] = mapped_column(String(200))
+    bezel: Mapped[Optional[str]] = mapped_column(String(200))
+    crystal: Mapped[Optional[str]] = mapped_column(String(120))
+    water_resistance: Mapped[Optional[str]] = mapped_column(String(80))
+    power_reserve: Mapped[Optional[str]] = mapped_column(String(80))
+    bracelet_strap: Mapped[Optional[str]] = mapped_column(String(200))
+    functions: Mapped[Optional[str]] = mapped_column(String(300))
     extra: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    source_note: Mapped[str | None] = mapped_column(Text)
+    source_note: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="draft")  # draft | approved
-    approved_by: Mapped[str | None] = mapped_column(String(80))
-    approved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    approved_by: Mapped[Optional[str]] = mapped_column(String(80))
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -122,50 +122,50 @@ class Watch(Base):
     sku: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
     brand: Mapped[str] = mapped_column(String(120), nullable=False)
     model: Mapped[str] = mapped_column(String(200), nullable=False)
-    reference: Mapped[str | None] = mapped_column(String(120))
-    year: Mapped[str | None] = mapped_column(String(20))
-    condition: Mapped[str | None] = mapped_column(String(40))
-    condition_notes: Mapped[str | None] = mapped_column(Text)
+    reference: Mapped[Optional[str]] = mapped_column(String(120))
+    year: Mapped[Optional[str]] = mapped_column(String(20))
+    condition: Mapped[Optional[str]] = mapped_column(String(40))
+    condition_notes: Mapped[Optional[str]] = mapped_column(Text)
 
-    price_sgd: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    price_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    fx_rate_sgd_usd: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
-    fx_source: Mapped[str | None] = mapped_column(String(40))
-    fx_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    price_sgd: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2))
+    price_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2))
+    fx_rate_sgd_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 6))
+    fx_source: Mapped[Optional[str]] = mapped_column(String(40))
+    fx_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     box_papers: Mapped[str] = mapped_column(String(30), default="unknown")
-    box_papers_notes: Mapped[str | None] = mapped_column(Text)
+    box_papers_notes: Mapped[Optional[str]] = mapped_column(Text)
     custody: Mapped[str] = mapped_column(String(30), default="unknown")
 
     is_consignment: Mapped[bool] = mapped_column(Boolean, default=False)
-    consignor_name: Mapped[str | None] = mapped_column(String(200))
-    consignor_contact: Mapped[str | None] = mapped_column(String(200))
-    consignment_ref: Mapped[str | None] = mapped_column(String(120))
-    consignment_terms: Mapped[str | None] = mapped_column(Text)
-    consignment_payout_sgd: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    consignment_start: Mapped[date | None] = mapped_column(Date)
-    consignment_end: Mapped[date | None] = mapped_column(Date)
+    consignor_name: Mapped[Optional[str]] = mapped_column(String(200))
+    consignor_contact: Mapped[Optional[str]] = mapped_column(String(200))
+    consignment_ref: Mapped[Optional[str]] = mapped_column(String(120))
+    consignment_terms: Mapped[Optional[str]] = mapped_column(Text)
+    consignment_payout_sgd: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2))
+    consignment_start: Mapped[Optional[date]] = mapped_column(Date)
+    consignment_end: Mapped[Optional[date]] = mapped_column(Date)
     consignor_signoff: Mapped[str] = mapped_column(String(20), default="not_required")
 
-    description: Mapped[str | None] = mapped_column(Text)
-    internal_notes: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    internal_notes: Mapped[Optional[str]] = mapped_column(Text)
     extra_facts: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    spec_id: Mapped[str | None] = mapped_column(ForeignKey("spec_records.id", ondelete="SET NULL"))
+    spec_id: Mapped[Optional[str]] = mapped_column(ForeignKey("spec_records.id", ondelete="SET NULL"))
 
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     status_changed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     gallery: Mapped[list[str]] = mapped_column(JSON, default=list)
-    channels: Mapped[list[str] | None] = mapped_column(JSON)  # None = every channel enabled in Settings
-    hero_asset_id: Mapped[str | None] = mapped_column(String(32))
+    channels: Mapped[Optional[list[str]]] = mapped_column(JSON)  # None = every channel enabled in Settings
+    hero_asset_id: Mapped[Optional[str]] = mapped_column(String(32))
     content_version: Mapped[int] = mapped_column(Integer, default=1)
     studio_defaults: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
-    archived_at: Mapped[datetime | None] = mapped_column(DateTime)
-    created_by: Mapped[str | None] = mapped_column(String(120))
+    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_by: Mapped[Optional[str]] = mapped_column(String(120))
 
-    spec: Mapped[SpecRecord | None] = relationship()
+    spec: Mapped[Optional[SpecRecord]] = relationship()
     assets: Mapped[list["Asset"]] = relationship(back_populates="watch", order_by="Asset.sort_order")
 
 
@@ -185,55 +185,55 @@ class Asset(Base):
     width: Mapped[int] = mapped_column(Integer, default=0)
     height: Mapped[int] = mapped_column(Integer, default=0)
     exif_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    phash: Mapped[str | None] = mapped_column(String(32))
-    duplicate_of: Mapped[str | None] = mapped_column(String(32))
-    working_path: Mapped[str | None] = mapped_column(String(500))
+    phash: Mapped[Optional[str]] = mapped_column(String(32))
+    duplicate_of: Mapped[Optional[str]] = mapped_column(String(32))
+    working_path: Mapped[Optional[str]] = mapped_column(String(500))
     working_width: Mapped[int] = mapped_column(Integer, default=0)
     working_height: Mapped[int] = mapped_column(Integer, default=0)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    uploaded_by: Mapped[str | None] = mapped_column(String(120))
-    removed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    uploaded_by: Mapped[Optional[str]] = mapped_column(String(120))
+    removed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     # pipeline
     pipeline_status: Mapped[str] = mapped_column(String(30), default="uploaded")
-    pipeline_error: Mapped[str | None] = mapped_column(Text)
-    source_profile: Mapped[str | None] = mapped_column(String(20))  # edited | raw | phone
+    pipeline_error: Mapped[Optional[str]] = mapped_column(Text)
+    source_profile: Mapped[Optional[str]] = mapped_column(String(20))  # edited | raw | phone
     source_profile_reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
 
     # stage 1: inspection
     inspection: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    quality_score: Mapped[float | None] = mapped_column(Float)
-    selected: Mapped[bool | None] = mapped_column(Boolean)
+    quality_score: Mapped[Optional[float]] = mapped_column(Float)
+    selected: Mapped[Optional[bool]] = mapped_column(Boolean)
     selection_reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
-    selection_override: Mapped[bool | None] = mapped_column(Boolean)
-    photo_type: Mapped[str | None] = mapped_column(String(30))
-    photo_type_source: Mapped[str | None] = mapped_column(String(20))
-    photo_type_confidence: Mapped[float | None] = mapped_column(Float)
+    selection_override: Mapped[Optional[bool]] = mapped_column(Boolean)
+    photo_type: Mapped[Optional[str]] = mapped_column(String(30))
+    photo_type_source: Mapped[Optional[str]] = mapped_column(String(20))
+    photo_type_confidence: Mapped[Optional[float]] = mapped_column(Float)
     ai_tags: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
     # stage 2: privacy
     safety_status: Mapped[str] = mapped_column(String(30), default="pending")
-    safety_engine: Mapped[str | None] = mapped_column(String(60))
+    safety_engine: Mapped[Optional[str]] = mapped_column(String(60))
     safety_findings: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     safety_recheck: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    safety_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
-    safety_reviewed_by: Mapped[str | None] = mapped_column(String(120))
-    redacted_path: Mapped[str | None] = mapped_column(String(500))
+    safety_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    safety_reviewed_by: Mapped[Optional[str]] = mapped_column(String(120))
+    redacted_path: Mapped[Optional[str]] = mapped_column(String(500))
     redaction_version: Mapped[int] = mapped_column(Integer, default=0)
 
     # stage 3: segmentation
-    mask_path: Mapped[str | None] = mapped_column(String(500))
+    mask_path: Mapped[Optional[str]] = mapped_column(String(500))
     mask_version: Mapped[int] = mapped_column(Integer, default=0)
-    mask_source: Mapped[str | None] = mapped_column(String(60))
+    mask_source: Mapped[Optional[str]] = mapped_column(String(60))
     segmentation: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
     # stage 4/5: studio + review
     studio_settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    current_render_id: Mapped[str | None] = mapped_column(String(32))
+    current_render_id: Mapped[Optional[str]] = mapped_column(String(32))
     render_stale: Mapped[bool] = mapped_column(Boolean, default=False)
     review_status: Mapped[str] = mapped_column(String(30), default="pending")
-    review_note: Mapped[str | None] = mapped_column(Text)
+    review_note: Mapped[Optional[str]] = mapped_column(Text)
     warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
 
     watch: Mapped[Watch] = relationship(back_populates="assets")
@@ -257,11 +257,11 @@ class RedactionRegion(Base):
     w: Mapped[float] = mapped_column(Float, nullable=False)
     h: Mapped[float] = mapped_column(Float, nullable=False)
     source: Mapped[str] = mapped_column(String(20), default="manual")  # ocr | manual
-    category: Mapped[str | None] = mapped_column(String(60))
-    confidence: Mapped[float | None] = mapped_column(Float)
+    category: Mapped[Optional[str]] = mapped_column(String(60))
+    confidence: Mapped[Optional[float]] = mapped_column(Float)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    created_by: Mapped[str | None] = mapped_column(String(120))
+    created_by: Mapped[Optional[str]] = mapped_column(String(120))
 
     asset: Mapped[Asset] = relationship(back_populates="regions")
 
@@ -275,9 +275,9 @@ class AssetRender(Base):
     asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), index=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    background_source: Mapped[str | None] = mapped_column(String(80))
-    master_path: Mapped[str | None] = mapped_column(String(500))
-    master_sha256: Mapped[str | None] = mapped_column(String(64))
+    background_source: Mapped[Optional[str]] = mapped_column(String(80))
+    master_path: Mapped[Optional[str]] = mapped_column(String(500))
+    master_sha256: Mapped[Optional[str]] = mapped_column(String(64))
     variants: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     fidelity: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     fidelity_passed: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -313,13 +313,13 @@ class FactSuggestion(Base):
     field: Mapped[str] = mapped_column(String(60))
     value: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(40))
-    evidence: Mapped[str | None] = mapped_column(Text)
-    confidence: Mapped[float | None] = mapped_column(Float)
+    evidence: Mapped[Optional[str]] = mapped_column(Text)
+    confidence: Mapped[Optional[float]] = mapped_column(Float)
     status: Mapped[str] = mapped_column(String(20), default="open")  # open | accepted | dismissed
-    observation_id: Mapped[str | None] = mapped_column(String(32))
+    observation_id: Mapped[Optional[str]] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
-    resolved_by: Mapped[str | None] = mapped_column(String(120))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    resolved_by: Mapped[Optional[str]] = mapped_column(String(120))
 
 
 class ChannelCopy(Base):
@@ -336,10 +336,10 @@ class ChannelCopy(Base):
     generator: Mapped[str] = mapped_column(String(80), default="template")
     style: Mapped[str] = mapped_column(String(40), default="house")
     validation: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    fixed_blocks_hash: Mapped[str | None] = mapped_column(String(64))
-    facts_hash: Mapped[str | None] = mapped_column(String(64))
+    fixed_blocks_hash: Mapped[Optional[str]] = mapped_column(String(64))
+    facts_hash: Mapped[Optional[str]] = mapped_column(String(64))
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
-    updated_by: Mapped[str | None] = mapped_column(String(120))
+    updated_by: Mapped[Optional[str]] = mapped_column(String(120))
 
 
 class CopyRevision(Base):
@@ -355,7 +355,7 @@ class CopyRevision(Base):
     generator: Mapped[str] = mapped_column(String(80))
     reason: Mapped[str] = mapped_column(String(120))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    created_by: Mapped[str | None] = mapped_column(String(120))
+    created_by: Mapped[Optional[str]] = mapped_column(String(120))
 
 
 # ------------------------------------------------------------------------------------------------
@@ -370,14 +370,14 @@ class Approval(Base):
     scope: Mapped[str] = mapped_column(String(20))  # image | channel | package
     target: Mapped[str] = mapped_column(String(60))  # asset id | channel key | "package"
     content_hash: Mapped[str] = mapped_column(String(64))
-    content_ref: Mapped[str | None] = mapped_column(String(120))
+    content_ref: Mapped[Optional[str]] = mapped_column(String(120))
     snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     approved_by: Mapped[str] = mapped_column(String(160))
     approved_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    note: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="active")  # active | invalidated | revoked
-    invalidated_at: Mapped[datetime | None] = mapped_column(DateTime)
-    invalidated_reason: Mapped[str | None] = mapped_column(Text)
+    invalidated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    invalidated_reason: Mapped[Optional[str]] = mapped_column(Text)
 
 
 class ChannelListing(Base):
@@ -389,13 +389,13 @@ class ChannelListing(Base):
     channel: Mapped[str] = mapped_column(String(40))
     status: Mapped[str] = mapped_column(String(30), default="not_started")
     mode: Mapped[str] = mapped_column(String(20), default="manual")  # api | feed | manual | simulation
-    external_id: Mapped[str | None] = mapped_column(String(200))
-    external_url: Mapped[str | None] = mapped_column(String(500))
-    published_hash: Mapped[str | None] = mapped_column(String(64))
-    published_at: Mapped[datetime | None] = mapped_column(DateTime)
-    last_action: Mapped[str | None] = mapped_column(String(40))
-    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime)
-    last_error: Mapped[str | None] = mapped_column(Text)
+    external_id: Mapped[Optional[str]] = mapped_column(String(200))
+    external_url: Mapped[Optional[str]] = mapped_column(String(500))
+    published_hash: Mapped[Optional[str]] = mapped_column(String(64))
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_action: Mapped[Optional[str]] = mapped_column(String(40))
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -410,11 +410,11 @@ class ManualTask(Base):
     title: Mapped[str] = mapped_column(String(300))
     instructions: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="open")  # open | done | dismissed
-    live_url: Mapped[str | None] = mapped_column(String(500))
-    content_hash: Mapped[str | None] = mapped_column(String(64))
+    live_url: Mapped[Optional[str]] = mapped_column(String(500))
+    content_hash: Mapped[Optional[str]] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
-    completed_by: Mapped[str | None] = mapped_column(String(120))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    completed_by: Mapped[Optional[str]] = mapped_column(String(120))
 
 
 # ------------------------------------------------------------------------------------------------
@@ -427,25 +427,25 @@ class Job(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     type: Mapped[str] = mapped_column(String(60), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="pending")
-    watch_id: Mapped[str | None] = mapped_column(String(32), index=True)
-    asset_id: Mapped[str | None] = mapped_column(String(32))
-    channel: Mapped[str | None] = mapped_column(String(40))
+    watch_id: Mapped[Optional[str]] = mapped_column(String(32), index=True)
+    asset_id: Mapped[Optional[str]] = mapped_column(String(32))
+    channel: Mapped[Optional[str]] = mapped_column(String(40))
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     result: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    error: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[Optional[str]] = mapped_column(Text)
     progress: Mapped[float] = mapped_column(Float, default=0.0)
-    progress_message: Mapped[str | None] = mapped_column(String(300))
+    progress_message: Mapped[Optional[str]] = mapped_column(String(300))
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, default=3)
-    idempotency_key: Mapped[str | None] = mapped_column(String(200), unique=True)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(200), unique=True)
     run_after: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    locked_by: Mapped[str | None] = mapped_column(String(80))
-    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime)
+    locked_by: Mapped[Optional[str]] = mapped_column(String(80))
+    heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_by: Mapped[str | None] = mapped_column(String(160))
+    created_by: Mapped[Optional[str]] = mapped_column(String(160))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 
 class AuditEvent(Base):
@@ -455,12 +455,12 @@ class AuditEvent(Base):
     at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     actor: Mapped[str] = mapped_column(String(160))
     action: Mapped[str] = mapped_column(String(80))
-    entity_type: Mapped[str | None] = mapped_column(String(40))
-    entity_id: Mapped[str | None] = mapped_column(String(64))
-    watch_id: Mapped[str | None] = mapped_column(String(32), index=True)
+    entity_type: Mapped[Optional[str]] = mapped_column(String(40))
+    entity_id: Mapped[Optional[str]] = mapped_column(String(64))
+    watch_id: Mapped[Optional[str]] = mapped_column(String(32), index=True)
     summary: Mapped[str] = mapped_column(Text, default="")
     detail: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    ip: Mapped[str | None] = mapped_column(String(64))
+    ip: Mapped[Optional[str]] = mapped_column(String(64))
 
 
 class AIUsage(Base):
@@ -478,9 +478,9 @@ class AIUsage(Base):
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(String(30), default="ok")
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
-    watch_id: Mapped[str | None] = mapped_column(String(32))
-    job_id: Mapped[str | None] = mapped_column(String(32))
-    error: Mapped[str | None] = mapped_column(Text)
+    watch_id: Mapped[Optional[str]] = mapped_column(String(32))
+    job_id: Mapped[Optional[str]] = mapped_column(String(32))
+    error: Mapped[Optional[str]] = mapped_column(Text)
 
 
 class AppSetting(Base):
@@ -489,7 +489,7 @@ class AppSetting(Base):
     key: Mapped[str] = mapped_column(String(80), primary_key=True)
     value: Mapped[Any] = mapped_column(JSON)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
-    updated_by: Mapped[str | None] = mapped_column(String(120))
+    updated_by: Mapped[Optional[str]] = mapped_column(String(120))
 
 
 class IntegrationStatus(Base):
@@ -497,7 +497,7 @@ class IntegrationStatus(Base):
 
     name: Mapped[str] = mapped_column(String(40), primary_key=True)
     state: Mapped[str] = mapped_column(String(30), default="not_configured")
-    checked_at: Mapped[datetime | None] = mapped_column(DateTime)
-    message: Mapped[str | None] = mapped_column(Text)
+    checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    message: Mapped[Optional[str]] = mapped_column(Text)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     live_enabled: Mapped[bool] = mapped_column(Boolean, default=False)

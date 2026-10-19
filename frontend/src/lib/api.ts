@@ -36,22 +36,43 @@ function buildUrl(path: string, query?: Query) {
   return url.pathname + url.search;
 }
 
-async function parseError(res: Response): Promise<ApiError> {
+async function parseError(res: Response, path?: string): Promise<ApiError> {
   let code = "error";
   let message = `Request failed (${res.status}).`;
   let details: Record<string, unknown> = {};
+  let rawText = "";
   try {
-    const body = await res.json();
+    rawText = await res.text();
+    const body = JSON.parse(rawText);
     if (body?.error) {
       code = body.error.code ?? code;
       message = body.error.message ?? message;
       details = body.error.details ?? {};
+    } else if (body?.detail) {
+      message = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      code = "fastapi_detail";
+    } else if (body?.message) {
+      message = body.message;
+      code = body.code ?? "server_message";
+    }
+    if (body && typeof body === "object") {
+      details = { ...details, ...body };
     }
   } catch {
-    /* not JSON */
+    if (rawText && rawText.trim().length > 0) {
+      const clean = rawText.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      message = clean.slice(0, 300) || `Request failed (${res.status}).`;
+      details = { raw: rawText.slice(0, 1000) };
+    }
   }
   if (res.status === 401) window.dispatchEvent(new CustomEvent("studio:auth-expired"));
-  if (res.status === 0 || res.status >= 502) message = "The studio server is not responding. Check that it is running.";
+  if (res.status === 0) message = "The studio server did not respond. Check your connection.";
+
+  const pathLabel = path ? ` on ${path}` : "";
+  if (path && !message.includes(path)) {
+    message = `${message} (${res.status}${pathLabel})`;
+  }
+
   return new ApiError(res.status, code, message, details);
 }
 
@@ -73,9 +94,9 @@ export async function api<T = unknown>(
       signal: opts.signal,
     });
   } catch {
-    throw new ApiError(0, "network", "Cannot reach the studio server. Check that it is running.");
+    throw new ApiError(0, "network", `Cannot reach the studio server${path ? ` [${path}]` : ""}. Check that it is running.`);
   }
-  if (!res.ok) throw await parseError(res);
+  if (!res.ok) throw await parseError(res, path);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

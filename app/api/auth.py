@@ -128,26 +128,39 @@ def setup(body: SetupIn, request: Request, response: Response, db: Session = Dep
 
 @router.post("/register")
 def register(body: RegisterIn, request: Request, response: Response, db: Session = Depends(get_db)) -> dict:
-    existing = db.scalar(select(User).where(func.lower(User.username) == body.username.strip().lower()))
-    if existing:
-        raise AppError("That username is already taken.", code="username_taken", status_code=400)
-    problem = password_problem(body.password)
-    if problem:
-        raise AppError(problem, code="weak_password")
-    user = User(
-        username=body.username.strip(),
-        display_name=body.display_name.strip(),
-        password_hash=hash_password(body.password),
-        password_changed_at=utcnow(),
-        last_login_at=utcnow(),
-        role="owner" if _user_count(db) == 0 else "user",
-    )
-    db.add(user)
-    db.flush()
-    sess = _start_session(db, response, user, request)
-    audit.record(db, f"user:{user.username}", "account_created", "Studio account created", ip=client_ip(request))
-    db.commit()
-    return {"authenticated": True, "user": _user_view(user), "csrf_token": sess.csrf_token}
+    try:
+        existing = db.scalar(select(User).where(func.lower(User.username) == body.username.strip().lower()))
+        if existing:
+            raise AppError("That username is already taken.", code="username_taken", status_code=400)
+        problem = password_problem(body.password)
+        if problem:
+            raise AppError(problem, code="weak_password")
+        user = User(
+            username=body.username.strip(),
+            display_name=body.display_name.strip(),
+            password_hash=hash_password(body.password),
+            password_changed_at=utcnow(),
+            last_login_at=utcnow(),
+            role="owner" if _user_count(db) == 0 else "user",
+        )
+        db.add(user)
+        db.flush()
+        sess = _start_session(db, response, user, request)
+        audit.record(db, f"user:{user.username}", "account_created", "Studio account created", ip=client_ip(request))
+        db.commit()
+        return {"authenticated": True, "user": _user_view(user), "csrf_token": sess.csrf_token}
+    except AppError:
+        raise
+    except Exception as exc:
+        import traceback
+        tb = traceback.format_exc()
+        db.rollback()
+        raise AppError(
+            f"Registration failed: {type(exc).__name__}: {str(exc)}",
+            code="registration_db_error",
+            status_code=500,
+            details={"type": type(exc).__name__, "message": str(exc), "traceback": tb},
+        )
 
 
 @router.post("/login")

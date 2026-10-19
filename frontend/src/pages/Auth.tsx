@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useAuth } from "../lib/auth";
-import { errorMessage } from "../lib/api";
+import { errorMessage, ApiError } from "../lib/api";
 import { Button, Notice, TextInput } from "../components/ui";
 
 function Shell({ children, title, sub }: { children: ReactNode; title: string; sub: string }) {
@@ -44,6 +44,7 @@ export function LoginPage() {
   const [name, setName] = useState("");
   const [repeat, setRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const isRegister = mode === "register";
@@ -51,18 +52,27 @@ export function LoginPage() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (isRegister && password !== repeat) {
+      setErrorDetails(null);
       return setError("The two passwords do not match.");
     }
     setBusy(true);
     setError(null);
+    setErrorDetails(null);
     try {
       if (isRegister) {
         await register(username, password, name);
       } else {
         await login(username, password);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(errorMessage(err));
+      if (err instanceof ApiError && err.details) {
+        const d = err.details;
+        const extra = d.traceback || d.raw || (Object.keys(d).length > 0 ? JSON.stringify(d, null, 2) : null);
+        setErrorDetails(typeof extra === "string" ? extra : null);
+      } else {
+        setErrorDetails(null);
+      }
     } finally {
       setBusy(false);
     }
@@ -115,7 +125,19 @@ export function LoginPage() {
             required
           />
         )}
-        {error && <Notice tone="danger">{error}</Notice>}
+        {error && (
+          <Notice tone="danger">
+            <div className="break-words">{error}</div>
+            {errorDetails && (
+              <details className="mt-2 text-[11px] font-mono whitespace-pre-wrap max-h-48 overflow-auto bg-black/5 dark:bg-black/30 p-2 rounded border border-danger/20">
+                <summary className="cursor-pointer font-sans font-medium text-[12px] opacity-80 hover:opacity-100 select-none">
+                  Show technical details
+                </summary>
+                <div className="mt-1 select-text">{errorDetails}</div>
+              </details>
+            )}
+          </Notice>
+        )}
         <Button variant="primary" size="lg" className="w-full" loading={busy} type="submit">
           {isRegister ? "Create account" : "Sign in"}
         </Button>

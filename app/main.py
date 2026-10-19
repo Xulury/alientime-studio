@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+import os
+import traceback
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -93,6 +95,17 @@ class SecurityHeaders(BaseHTTPMiddleware):
         return response
 
 
+class PrefixNormalizationMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if not path.startswith("/api/") and any(
+            path.startswith(f"/{prefix}")
+            for prefix in ("auth", "system", "watches", "assets", "listings", "review", "publishing", "config", "webhooks", "debug", "health")
+        ):
+            request.scope["path"] = f"/api{path}"
+        return await call_next(request)
+
+
 def _error(status: int, code: str, message: str, details: dict | None = None) -> JSONResponse:
     return JSONResponse({"error": {"code": code, "message": message, "details": details or {}}}, status_code=status)
 
@@ -119,7 +132,7 @@ async def lifespan(app: FastAPI):
             except Exception as inner_exc:
                 log.error("Failed to initialize database tables: %s", inner_exc)
     worker = None
-    if s.worker_mode == "thread" and not s.is_test:
+    if s.worker_mode == "thread" and not s.is_test and not (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")):
         from app.jobs.worker import Worker
 
         worker = Worker(concurrency=s.worker_concurrency)
@@ -135,6 +148,7 @@ def create_app() -> FastAPI:
     register_mime_types()
     app = FastAPI(title="Alien Time Listing Studio", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.add_middleware(SecurityHeaders)
+    app.add_middleware(PrefixNormalizationMiddleware)
 
     @app.exception_handler(AppError)
     async def _app_error(_request: Request, exc: AppError):
@@ -156,8 +170,14 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def _unhandled(_request: Request, exc: Exception):
         ref = uuid.uuid4().hex[:8]
-        log.exception("unhandled error %s", ref)
-        return _error(500, "server_error", f"Something went wrong on the server (reference {ref}). It has been logged.")
+        tb = traceback.format_exc()
+        log.exception("unhandled error %s: %s", ref, exc)
+        return _error(
+            500,
+            "server_error",
+            f"{type(exc).__name__}: {str(exc)} (ref: {ref})",
+            {"type": type(exc).__name__, "message": str(exc), "traceback": tb, "ref": ref},
+        )
 
     from app.api import assets, auth, config_api, listings, publishing, review, system, watches, webhooks
 

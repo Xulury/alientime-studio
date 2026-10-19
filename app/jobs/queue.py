@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -31,7 +31,7 @@ class JobCancelled(Exception):
     pass
 
 
-HandlerFn = Callable[["JobContext"], dict[str, Any] | None]
+HandlerFn = Callable[["JobContext"], Optional[dict[str, Any]]]
 _HANDLERS: dict[str, HandlerFn] = {}
 JOB_LABELS: dict[str, str] = {}
 

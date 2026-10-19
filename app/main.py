@@ -102,11 +102,21 @@ async def lifespan(app: FastAPI):
     s = get_settings()
     configure_logging(s.studio_log_level, s.studio_log_json)
     s.ensure_dirs()
-    from app.db.migrate import upgrade_database
+    try:
+        from app.db.migrate import upgrade_database
 
-    report = upgrade_database()
-    if report.get("legacy_detected"):
-        log.info("Imported data from the earlier MVP: %s", report)
+        report = upgrade_database()
+        if report.get("legacy_detected"):
+            log.info("Imported data from the earlier MVP: %s", report)
+    except Exception as exc:
+        log.warning("Database migration via Alembic failed: %s; ensuring tables with Base.metadata", exc)
+        try:
+            from app.db import models  # noqa: F401
+            from app.db.base import Base, get_engine
+
+            Base.metadata.create_all(bind=get_engine())
+        except Exception as inner_exc:
+            log.error("Failed to initialize database tables: %s", inner_exc)
     worker = None
     if s.worker_mode == "thread" and not s.is_test:
         from app.jobs.worker import Worker

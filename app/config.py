@@ -5,6 +5,7 @@ hard-coded and never returned to the browser. `public_view()` gives the safe sub
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -147,10 +148,23 @@ class Settings(BaseSettings):
     @field_validator("studio_data_dir", mode="before")
     @classmethod
     def _resolve_data_dir(cls, v):
-        p = Path(v) if v else BASE_DIR / "data"
-        if not p.is_absolute():
-            p = BASE_DIR / p
-        return p
+        if v:
+            p = Path(v)
+            if not p.is_absolute():
+                p = BASE_DIR / p
+            return p
+        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            return Path("/tmp/data")
+        return BASE_DIR / "data"
+
+    @field_validator("worker_mode", mode="before")
+    @classmethod
+    def _resolve_worker_mode(cls, v):
+        if v:
+            return v
+        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            return "off"
+        return "thread"
 
     # ---- derived -----------------------------------------------------------------------------
     @property
@@ -203,7 +217,10 @@ class Settings(BaseSettings):
 
     def ensure_dirs(self) -> None:
         for d in (self.studio_data_dir, self.media_dir, self.exports_dir, self.feeds_dir, self.inbox_dir):
-            d.mkdir(parents=True, exist_ok=True)
+            try:
+                d.mkdir(parents=True, exist_ok=True)
+            except OSError:
+                pass
 
 
 @lru_cache

@@ -56,9 +56,12 @@ def _backup_sqlite() -> Path | None:
     db_path = Path(url.removeprefix("sqlite:///"))
     if not db_path.exists():
         return None
-    backup = db_path.with_name(f"{db_path.stem}.mvp-backup-{datetime.now():%Y%m%d-%H%M%S}{db_path.suffix}")
-    shutil.copy2(db_path, backup)
-    return backup
+    try:
+        backup = db_path.with_name(f"{db_path.stem}.mvp-backup-{datetime.now():%Y%m%d-%H%M%S}{db_path.suffix}")
+        shutil.copy2(db_path, backup)
+        return backup
+    except OSError:
+        return None
 
 
 def _rename_legacy_tables() -> None:

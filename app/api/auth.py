@@ -75,8 +75,9 @@ def _start_session(db: Session, response: Response, user: User, request: Request
         user_agent=(request.headers.get("user-agent") or "")[:255],
     )
     db.add(sess)
+    is_secure = s.studio_cookie_secure or (request.headers.get("x-forwarded-proto") == "https")
     response.set_cookie(
-        SESSION_COOKIE, raw, httponly=True, samesite="strict", secure=s.studio_cookie_secure,
+        SESSION_COOKIE, raw, httponly=True, samesite="strict", secure=is_secure,
         max_age=s.studio_session_hours * 3600, path="/",
     )
     return sess

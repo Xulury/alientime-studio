@@ -26,7 +26,7 @@ class WatchMedia:
 
 
 def media_paths(watch_id: str) -> WatchMedia:
-    if not watch_id or not all(c.isalnum() for c in watch_id):
+    if not watch_id or not all(c.isalnum() or c in "_-" for c in watch_id):
         raise ValueError("invalid watch id")
     root = get_settings().media_dir / watch_id
     wm = WatchMedia(root, root / "originals", root / "working", root / "redacted", root / "masks",
@@ -46,6 +46,56 @@ def rel(path: Path | str) -> str:
         return str(p)
 
 
+def stored_to_remote(stored: str | Path | None) -> str | None:
+    """Map a local relative storage path like 'media/w123/originals/a1.jpg' 
+    to Supabase Storage path '{watch_folder}/originals/a1.jpg'."""
+    if not stored:
+        return None
+    from app.core import supabase_storage
+
+    s = str(stored).replace("\\", "/").strip("/")
+    parts = s.split("/")
+    if len(parts) >= 3 and parts[0] == "media":
+        watch_id = parts[1]
+        subpath = "/".join(parts[2:])
+        folder = supabase_storage.get_watch_storage_prefix(watch_id)
+        return f"{folder}/{subpath}"
+    return s
+
+
+def sync_to_remote(path: Path | str, data: bytes | None = None) -> str | None:
+    """Upload file to Supabase Storage if configured."""
+    from app.core import supabase_storage
+
+    if not supabase_storage.is_storage_configured():
+        return None
+    try:
+        p = Path(path)
+        stored = rel(p)
+        remote_path = stored_to_remote(stored)
+        if not remote_path:
+            return None
+        if data is None and p.is_file():
+            data = p.read_bytes()
+        if not data:
+            return None
+        ext = p.suffix.lower()
+        content_types = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".heic": "image/heic",
+        }
+        content_type = content_types.get(ext, "application/octet-stream")
+        return supabase_storage.upload_bytes(remote_path, data, content_type)
+    except Exception as e:
+        import logging
+
+        logging.getLogger(__name__).warning("Failed to sync file %s to Supabase Storage: %s", path, e)
+        return None
+
+
 def resolve(stored: str | None) -> Path | None:
     """Resolve a stored path and make sure it stays inside the data directory."""
     if not stored:
@@ -55,6 +105,20 @@ def resolve(stored: str | None) -> Path | None:
     p = (base / p).resolve() if not p.is_absolute() else p.resolve()
     if base != p and base not in p.parents:
         return None
+    if not p.is_file():
+        from app.core import supabase_storage
+
+        if supabase_storage.is_storage_configured():
+            remote = stored_to_remote(stored)
+            if remote:
+                data = supabase_storage.download_bytes(remote)
+                if data:
+                    try:
+                        p.parent.mkdir(parents=True, exist_ok=True)
+                        with open(p, "wb") as f:
+                            f.write(data)
+                    except Exception:
+                        pass
     return p
 
 
@@ -76,7 +140,11 @@ def write_original(path: Path, data: bytes) -> None:
         raise FileExistsError(f"original already exists: {path.name}")
     with open(path, "xb") as f:
         f.write(data)
-    os.chmod(path, stat.S_IREAD | stat.S_IRGRP)
+    try:
+        os.chmod(path, stat.S_IREAD | stat.S_IRGRP)
+    except OSError:
+        pass
+    sync_to_remote(path, data)
 
 
 def atomic_write(path: Path, data: bytes) -> None:
@@ -84,3 +152,4 @@ def atomic_write(path: Path, data: bytes) -> None:
     with open(tmp, "wb") as f:
         f.write(data)
     os.replace(tmp, path)
+    sync_to_remote(path, data)

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.core import audit
-from app.core.storage import media_paths, rel, sha256_bytes, write_original
+from app.core.storage import media_paths, rel, sha256_bytes, sync_to_remote, write_original
 from app.db.models import Asset, Watch
 
 log = logging.getLogger(__name__)
@@ -173,6 +173,10 @@ def ingest_image(
     if elsewhere:
         warns.append(f"The same file is also attached to {elsewhere}.")
 
+    from app.core.supabase_storage import get_watch_storage_prefix
+
+    get_watch_storage_prefix(watch.id, watch.brand, watch.model, watch.reference, watch.sku)
+
     paths = media_paths(watch.id)
     asset = Asset(watch_id=watch.id, source=source, original_filename=name, original_sha256=digest,
                   original_bytes=len(data), original_format=fmt, width=img.width, height=img.height,
@@ -186,12 +190,14 @@ def ingest_image(
     rgb, alpha = make_working_copy(img)
     working = paths.working / f"{asset.id}.jpg"
     rgb.save(working, "JPEG", quality=95, subsampling=0, optimize=True)
+    sync_to_remote(working)
     asset.working_path = rel(working)
     asset.working_width, asset.working_height = rgb.size
     asset.phash = dhash(rgb)
     if alpha is not None:
         mask_file = paths.masks / f"{asset.id}_v1.png"
         alpha.save(mask_file, "PNG")
+        sync_to_remote(mask_file)
         asset.mask_path = rel(mask_file)
         asset.mask_version = 1
         asset.mask_source = "source_transparency"

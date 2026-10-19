@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     studio_env: Literal["development", "production", "test"] = "development"
     studio_data_dir: Path = BASE_DIR / "data"
     database_url: str | None = None
+    supabase_url: str | None = None
+    supabase_key: SecretStr | None = None
+    supabase_storage_bucket: str = "watch-photos"
     studio_base_url: str = "http://127.0.0.1:8000"
     studio_cookie_secure: bool = False
     studio_session_hours: int = 12
@@ -170,7 +173,12 @@ class Settings(BaseSettings):
     @property
     def db_url(self) -> str:
         if self.database_url:
-            return self.database_url
+            url = self.database_url
+            if url.startswith("postgres://"):
+                url = "postgresql+psycopg://" + url.removeprefix("postgres://")
+            elif url.startswith("postgresql://"):
+                url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
+            return url
         return f"sqlite:///{(self.studio_data_dir / 'studio.db').as_posix()}"
 
     @property

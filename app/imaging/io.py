@@ -29,6 +29,12 @@ def save_jpeg(arr: np.ndarray, path: Path, quality: int = 92) -> bytes:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_bytes(data)
     tmp.replace(path)
+    try:
+        from app.core.storage import sync_to_remote
+
+        sync_to_remote(path, data)
+    except Exception:
+        pass
     return data
 
 
@@ -39,6 +45,12 @@ def save_png(arr: np.ndarray, path: Path, mode: str | None = None) -> bytes:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_bytes(data)
     tmp.replace(path)
+    try:
+        from app.core.storage import sync_to_remote
+
+        sync_to_remote(path, data)
+    except Exception:
+        pass
     return data
 
 

@@ -87,6 +87,20 @@ def asset_view(db: Session, a: Asset, *, full: bool = False) -> dict[str, Any]:
             "original": image_url(a.id, "original"),
         },
     }
+    from app.core.storage import stored_to_remote
+    from app.core.supabase_storage import get_public_url, is_storage_configured
+
+    if is_storage_configured():
+        cdn: dict[str, str] = {}
+        if a.original_path:
+            rem = stored_to_remote(a.original_path)
+            if rem:
+                cdn["original"] = get_public_url(rem)
+        if render and render.master_path:
+            rem_m = stored_to_remote(render.master_path)
+            if rem_m:
+                cdn["final"] = get_public_url(rem_m)
+        v["cdn_urls"] = cdn
     if full:
         v.update({
             "inspection": a.inspection or {},

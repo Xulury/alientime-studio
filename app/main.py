@@ -95,18 +95,6 @@ class SecurityHeaders(BaseHTTPMiddleware):
         return response
 
 
-class PrefixNormalizationMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        if not path.startswith("/api/") and not path.startswith("/assets/"):
-            if any(
-                path.startswith(f"/{prefix}")
-                for prefix in ("auth", "system", "watches", "listings", "review", "publishing", "config", "webhooks", "debug", "health")
-            ):
-                request.scope["path"] = f"/api{path}"
-        return await call_next(request)
-
-
 def _error(status: int, code: str, message: str, details: dict | None = None) -> JSONResponse:
     return JSONResponse({"error": {"code": code, "message": message, "details": details or {}}}, status_code=status)
 
@@ -149,7 +137,6 @@ def create_app() -> FastAPI:
     register_mime_types()
     app = FastAPI(title="Alien Time Listing Studio", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.add_middleware(SecurityHeaders)
-    app.add_middleware(PrefixNormalizationMiddleware)
 
     @app.exception_handler(AppError)
     async def _app_error(_request: Request, exc: AppError):

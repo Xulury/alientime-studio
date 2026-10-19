@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Archive, ChevronLeft, RotateCcw } from "lucide-react";
-import { del, post } from "../lib/api";
+import { del, post, errorMessage } from "../lib/api";
 import { keys, useAction, useWatch } from "../lib/hooks";
 import { money, CUSTODY } from "../lib/format";
 import { Button, Loading, Notice, Pill, Progress, StatusPill, Tabs, useConfirm } from "../components/ui";
@@ -39,7 +39,24 @@ export default function WatchPage() {
   const restore = useAction(() => post(`/api/watches/${id}/restore`), { success: "Watch restored", invalidate });
 
   if (q.isLoading) return <Loading />;
-  if (q.error || !q.data) return <Notice tone="danger" title="This watch could not be loaded">It may have been removed. <Link className="underline" to="/inventory">Back to inventory</Link></Notice>;
+  if (q.error || !q.data) {
+    const msg = q.error ? errorMessage(q.error) : "This watch may have been removed or does not exist.";
+    return (
+      <div className="max-w-xl mx-auto mt-8 space-y-4">
+        <Notice tone="danger" title="This watch could not be loaded">
+          <div>{msg}</div>
+          <div className="flex items-center gap-3 mt-3">
+            <Button size="sm" variant="secondary" onClick={() => q.refetch()}>
+              Try again
+            </Button>
+            <Link className="text-[13px] text-velvet underline" to="/inventory">
+              Back to inventory
+            </Link>
+          </div>
+        </Notice>
+      </div>
+    );
+  }
   const { watch: w, summary, assets, jobs, readiness } = q.data;
   const active = jobs.filter((j) => j.status === "pending" || j.status === "running");
   const current = (TABS.includes(tab as Tab) ? tab : "overview") as Tab;

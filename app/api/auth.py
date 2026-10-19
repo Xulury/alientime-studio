@@ -163,6 +163,39 @@ def register(body: RegisterIn, request: Request, response: Response, db: Session
         )
 
 
+@router.post("/guest")
+def guest_login(request: Request, response: Response, db: Session = Depends(get_db)) -> dict:
+    try:
+        guest = db.scalar(select(User).where(func.lower(User.username) == "guest"))
+        if not guest:
+            guest = User(
+                username="guest",
+                display_name="Guest User",
+                password_hash=hash_password(secrets.token_hex(16)),
+                role="owner",
+                password_changed_at=utcnow(),
+                last_login_at=utcnow(),
+            )
+            db.add(guest)
+            db.flush()
+        else:
+            guest.last_login_at = utcnow()
+        sess = _start_session(db, response, guest, request)
+        audit.record(db, "user:guest", "guest_sign_in", "Signed in as guest", ip=client_ip(request))
+        db.commit()
+        return {"authenticated": True, "user": _user_view(guest), "csrf_token": sess.csrf_token}
+    except Exception as exc:
+        import traceback
+        tb = traceback.format_exc()
+        db.rollback()
+        raise AppError(
+            f"Guest login failed: {type(exc).__name__}: {str(exc)}",
+            code="guest_login_failed",
+            status_code=500,
+            details={"type": type(exc).__name__, "message": str(exc), "traceback": tb},
+        )
+
+
 @router.post("/login")
 def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)) -> dict:
     s = get_settings()

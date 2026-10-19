@@ -3,9 +3,35 @@ import { useAuth } from "../lib/auth";
 import { errorMessage, ApiError } from "../lib/api";
 import { Button, Notice, TextInput } from "../components/ui";
 
-function Shell({ children, title, sub }: { children: ReactNode; title: string; sub: string }) {
+function Shell({
+  children,
+  title,
+  sub,
+  onGuest,
+  guestBusy,
+}: {
+  children: ReactNode;
+  title: string;
+  sub: string;
+  onGuest?: () => void;
+  guestBusy?: boolean;
+}) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr] relative">
+      {onGuest && (
+        <div className="absolute top-5 right-6 z-20">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onGuest}
+            loading={guestBusy}
+            className="bg-white/95 hover:bg-white text-ink border border-line-strong hover:border-velvet shadow-sm font-medium gap-1.5 backdrop-blur-xs cursor-pointer"
+          >
+            <span>Continue as Guest</span>
+            <span aria-hidden="true">→</span>
+          </Button>
+        </div>
+      )}
       <div className="hidden lg:flex flex-col justify-between bg-stage text-white p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-90" style={{
           background: "radial-gradient(120% 90% at 30% 25%, #2a6a50 0%, #1e4d3a 38%, #10251c 75%, #0b1712 100%)",
@@ -37,7 +63,7 @@ function Shell({ children, title, sub }: { children: ReactNode; title: string; s
 }
 
 export function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, guest } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -46,8 +72,29 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
 
   const isRegister = mode === "register";
+
+  const handleGuest = async () => {
+    setGuestBusy(true);
+    setError(null);
+    setErrorDetails(null);
+    try {
+      await guest();
+    } catch (err: any) {
+      setError(errorMessage(err));
+      if (err instanceof ApiError && err.details) {
+        const d = err.details;
+        const extra = d.traceback || d.raw || (Object.keys(d).length > 0 ? JSON.stringify(d, null, 2) : null);
+        setErrorDetails(typeof extra === "string" ? extra : null);
+      } else {
+        setErrorDetails(null);
+      }
+    } finally {
+      setGuestBusy(false);
+    }
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -86,6 +133,8 @@ export function LoginPage() {
           ? "Set up an account to access the studio and inventory."
           : "Use the studio account set up on this computer."
       }
+      onGuest={handleGuest}
+      guestBusy={guestBusy}
     >
       <form onSubmit={submit} className="space-y-4">
         {isRegister && (
@@ -172,19 +221,43 @@ export function LoginPage() {
             </>
           )}
         </div>
+        <div className="pt-2 text-center border-t border-line">
+          <button
+            type="button"
+            onClick={handleGuest}
+            disabled={guestBusy}
+            className="text-[13px] text-steel hover:text-velvet hover:underline cursor-pointer transition-colors"
+          >
+            Or explore as Guest without signing in →
+          </button>
+        </div>
       </form>
     </Shell>
   );
 }
 
 export function SetupPage({ allowed }: { allowed: boolean }) {
-  const { setup } = useAuth();
+  const { setup, guest } = useAuth();
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
+
+  const handleGuest = async () => {
+    setGuestBusy(true);
+    setError(null);
+    try {
+      await guest();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setGuestBusy(false);
+    }
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== repeat) return setError("The two passwords do not match.");
@@ -199,12 +272,22 @@ export function SetupPage({ allowed }: { allowed: boolean }) {
     }
   };
   return (
-    <Shell title="Set up the studio" sub="Create the owner account. This is done once, on the computer that runs the studio.">
+    <Shell
+      title="Set up the studio"
+      sub="Create the owner account. This is done once, on the computer that runs the studio."
+      onGuest={handleGuest}
+      guestBusy={guestBusy}
+    >
       {!allowed ? (
-        <Notice tone="warning" title="Open the studio on its own computer">
-          For safety, the first account can only be created from the machine running the studio (http://127.0.0.1:8000).
-          You can also run <code>python -m app.cli create-user</code> there.
-        </Notice>
+        <div className="space-y-4">
+          <Notice tone="warning" title="Open the studio on its own computer">
+            For safety, the first account can only be created from the machine running the studio (http://127.0.0.1:8000).
+            You can also run <code>python -m app.cli create-user</code> there.
+          </Notice>
+          <Button variant="primary" size="lg" className="w-full" onClick={handleGuest} loading={guestBusy}>
+            Continue as Guest →
+          </Button>
+        </div>
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <TextInput label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Matthew" />
@@ -215,6 +298,16 @@ export function SetupPage({ allowed }: { allowed: boolean }) {
           <TextInput label="Repeat password" type="password" autoComplete="new-password" value={repeat} onChange={(e) => setRepeat(e.target.value)} required />
           {error && <Notice tone="danger">{error}</Notice>}
           <Button variant="primary" size="lg" className="w-full" loading={busy} type="submit">Create account</Button>
+          <div className="pt-2 text-center border-t border-line">
+            <button
+              type="button"
+              onClick={handleGuest}
+              disabled={guestBusy}
+              className="text-[13px] text-steel hover:text-velvet hover:underline cursor-pointer transition-colors"
+            >
+              Or explore as Guest without signing in →
+            </button>
+          </div>
         </form>
       )}
     </Shell>

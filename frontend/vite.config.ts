@@ -12,7 +12,7 @@ const apiTarget = process.env.STUDIO_API_URL || "http://127.0.0.1:8000";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: "../app/web",
+    outDir: "dist",
     emptyOutDir: true,
     sourcemap: false,
     chunkSizeWarningLimit: 900,

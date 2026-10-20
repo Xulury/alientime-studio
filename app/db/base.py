@@ -12,7 +12,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 _engine: Engine | None = None
 _SessionFactory: sessionmaker | None = None
 

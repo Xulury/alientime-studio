@@ -151,22 +151,23 @@ class Settings(BaseSettings):
     @field_validator("studio_data_dir", mode="before")
     @classmethod
     def _resolve_data_dir(cls, v):
+        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            custom = os.environ.get("STUDIO_DATA_DIR")
+            return Path(custom) if custom else Path("/tmp/data")
         if v:
             p = Path(v)
             if not p.is_absolute():
                 p = BASE_DIR / p
             return p
-        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-            return Path("/tmp/data")
         return BASE_DIR / "data"
 
     @field_validator("worker_mode", mode="before")
     @classmethod
     def _resolve_worker_mode(cls, v):
-        if v:
-            return v
         if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
             return "off"
+        if v:
+            return v
         return "thread"
 
     # ---- derived -----------------------------------------------------------------------------

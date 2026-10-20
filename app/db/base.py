@@ -51,7 +51,7 @@ def get_engine() -> Engine:
                 from sqlalchemy.pool import NullPool
 
                 kwargs["poolclass"] = NullPool
-                kwargs["connect_args"] = {"prepare_threshold": None}
+                kwargs["connect_args"] = {"prepare_threshold": None, "connect_timeout": 5}
                 kwargs["execution_options"] = {"compiled_cache": None}
             _engine = create_engine(url, **kwargs)
             if url.startswith("sqlite"):
@@ -68,12 +68,13 @@ def ensure_tables() -> None:
     if not _tables_initialized:
         with _lock:
             if not _tables_initialized:
+                _tables_initialized = True
                 try:
-                    from app.db import models  # noqa: F401
-
                     eng = get_engine()
-                    Base.metadata.create_all(bind=eng)
-                    _tables_initialized = True
+                    if str(eng.url).startswith("sqlite"):
+                        from app.db import models  # noqa: F401
+
+                        Base.metadata.create_all(bind=eng)
                 except Exception as exc:
                     import logging
 

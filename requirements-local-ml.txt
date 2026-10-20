@@ -1,0 +1,4 @@
+# Optional local ML models for offline OCR and segmentation (bundled on desktop, skipped in lean serverless deployments)
+rapidocr_onnxruntime>=1.2,<2
+onnxruntime>=1.17
+rembg>=2.0.50,<3

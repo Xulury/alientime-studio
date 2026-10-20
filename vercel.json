@@ -4,7 +4,7 @@
     "app": {
       "root": ".",
       "framework": "fastapi",
-      "entrypoint": "app.main:app"
+      "entrypoint": "api/index.py"
     },
     "frontend": {
       "root": "frontend",
@@ -13,15 +13,40 @@
   },
   "rewrites": [
     {
+      "source": "/api",
+      "destination": {
+        "service": "app"
+      }
+    },
+    {
       "source": "/api/(.*)",
       "destination": {
         "service": "app"
       }
     },
     {
-      "source": "/(.*)",
+      "source": "/assets/(.*)",
       "destination": {
         "service": "frontend"
+      }
+    },
+    {
+      "source": "/favicon.svg",
+      "destination": {
+        "service": "frontend"
+      }
+    },
+    {
+      "source": "/(.*\\.(?:svg|png|jpg|jpeg|ico|json|woff2|woff|css|js|txt|map))",
+      "destination": {
+        "service": "frontend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend",
+        "path": "/index.html"
       }
     }
   ]

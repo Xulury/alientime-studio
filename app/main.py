@@ -73,9 +73,18 @@ class WebStaticFiles(StaticFiles):
         response.headers["cache-control"] = "public, max-age=31536000, immutable"
         return response
 
-CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; "
-       "script-src 'self'; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; "
-       "form-action 'self'")
+from fastapi.middleware.cors import CORSMiddleware
+
+CSP = (
+    "default-src 'self'; "
+    "img-src 'self' data: blob: https://*.supabase.co; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self' data:; "
+    "script-src 'self'; "
+    "connect-src 'self' https://*.supabase.co; "
+    "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; "
+    "form-action 'self'"
+)
 
 
 class SecurityHeaders(BaseHTTPMiddleware):
@@ -120,6 +129,14 @@ async def lifespan(app: FastAPI):
                 Base.metadata.create_all(bind=get_engine())
             except Exception as inner_exc:
                 log.error("Failed to initialize database tables: %s", inner_exc)
+    else:
+        try:
+            from app.db import models  # noqa: F401
+            from app.db.base import Base, get_engine
+
+            Base.metadata.create_all(bind=get_engine())
+        except Exception as exc:
+            log.warning("Failed to initialize database tables on serverless: %s", exc)
     worker = None
     if s.worker_mode == "thread" and not s.is_test and not (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")):
         from app.jobs.worker import Worker
@@ -136,7 +153,15 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     register_mime_types()
     app = FastAPI(title="Alien Time Listing Studio", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://.*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.add_middleware(SecurityHeaders)
+
 
     @app.exception_handler(AppError)
     async def _app_error(_request: Request, exc: AppError):

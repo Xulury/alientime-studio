@@ -60,17 +60,39 @@ def get_engine() -> Engine:
         return _engine
 
 
+_tables_initialized = False
+
+
+def ensure_tables() -> None:
+    global _tables_initialized
+    if not _tables_initialized:
+        with _lock:
+            if not _tables_initialized:
+                try:
+                    from app.db import models  # noqa: F401
+
+                    eng = get_engine()
+                    Base.metadata.create_all(bind=eng)
+                    _tables_initialized = True
+                except Exception as exc:
+                    import logging
+
+                    logging.getLogger("app.db").warning("Auto-create tables skipped/failed: %s", exc)
+
+
 def reset_engine() -> None:
     """Dispose the engine (used by tests and after changing settings)."""
-    global _engine, _SessionFactory
+    global _engine, _SessionFactory, _tables_initialized
     with _lock:
         if _engine is not None:
             _engine.dispose()
         _engine = None
         _SessionFactory = None
+        _tables_initialized = False
 
 
 def SessionLocal() -> Session:  # noqa: N802 - factory-style name
+    ensure_tables()
     get_engine()
     assert _SessionFactory is not None
     return _SessionFactory()

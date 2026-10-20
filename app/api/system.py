@@ -30,15 +30,19 @@ router = APIRouter(prefix="/api", tags=["system"])
 
 
 @router.get("/health")
-def health(db: Session = Depends(get_db)) -> dict:
+def health(details: bool = Query(default=False), db: Session = Depends(get_db)) -> dict:
     db_status = "connected"
     try:
         db.execute(text("SELECT 1")).scalar()
     except Exception as exc:
         db_status = f"error: {type(exc).__name__}: {str(exc)}"
 
+    status_val = "ok" if db_status == "connected" else "degraded"
+    if not details:
+        return {"status": status_val}
+
     return {
-        "status": "ok" if db_status == "connected" else "degraded",
+        "status": status_val,
         "database": db_status,
         "environment": {
             "vercel": bool(os.environ.get("VERCEL")),

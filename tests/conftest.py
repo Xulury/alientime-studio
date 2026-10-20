@@ -22,8 +22,9 @@ os.environ.update({
 })
 for k in list(os.environ):
     if k.startswith(("OPENAI_", "SHOPIFY_", "META_", "IG_", "FB_", "EBAY_", "R2_", "TELEGRAM_", "WHATSAPP_",
-                     "GOOGLE_", "DRIVE_", "FACTS_", "CHRONO24_", "CLOUDFLARE_")):
+                     "GOOGLE_", "DRIVE_", "FACTS_", "CHRONO24_", "CLOUDFLARE_")) or k in ("DATABASE_URL", "SUPABASE_URL", "SUPABASE_KEY"):
         del os.environ[k]
+
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

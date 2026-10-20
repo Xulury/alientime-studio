@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
-import { ConfirmProvider, Empty, Loading, ToastProvider } from "./components/ui";
+import { Button, ConfirmProvider, Empty, Loading, Notice, ToastProvider } from "./components/ui";
 import Layout from "./components/Layout";
 import { LoginPage, SetupPage } from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -18,7 +18,17 @@ const ActivityLog = lazy(() => import("./pages/ActivityLog"));
 const Settings = lazy(() => import("./pages/Settings"));
 
 function Gate() {
-  const { state } = useAuth();
+  const { state, error, refresh } = useAuth();
+  if (!state && error) return (
+    <div className="min-h-screen grid place-items-center p-6">
+      <div className="w-full max-w-lg">
+        <Notice tone="danger" title="The studio could not be opened">
+          <p className="break-words">{error}</p>
+          <Button className="mt-3" onClick={() => void refresh()}>Try again</Button>
+        </Notice>
+      </div>
+    </div>
+  );
   if (!state) return <div className="min-h-screen grid place-items-center"><Loading label="Opening the studio…" /></div>;
   if (state.setup_required) return <SetupPage allowed={!!state.setup_allowed_here} />;
   if (!state.authenticated) return <LoginPage />;

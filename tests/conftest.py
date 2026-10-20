@@ -30,9 +30,13 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 import app.jobs.handlers  # noqa: E402,F401  (register job handlers)
-from app.config import reset_settings_cache  # noqa: E402
+from app.config import Settings, reset_settings_cache  # noqa: E402
 from app.db.base import reset_engine  # noqa: E402
 from app.providers.registry import reset_provider  # noqa: E402
+
+# Tests must not reload production credentials from the developer's .env after the environment
+# above has been cleared. In particular, no fixture may contact the real database or photo bucket.
+Settings.model_config["env_file"] = None
 
 PASSWORD = "correct horse battery staple"
 

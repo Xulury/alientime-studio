@@ -129,14 +129,6 @@ async def lifespan(app: FastAPI):
                 Base.metadata.create_all(bind=get_engine())
             except Exception as inner_exc:
                 log.error("Failed to initialize database tables: %s", inner_exc)
-    else:
-        try:
-            from app.db import models  # noqa: F401
-            from app.db.base import Base, get_engine
-
-            Base.metadata.create_all(bind=get_engine())
-        except Exception as exc:
-            log.warning("Failed to initialize database tables on serverless: %s", exc)
     worker = None
     if s.worker_mode == "thread" and not s.is_test and not (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")):
         from app.jobs.worker import Worker

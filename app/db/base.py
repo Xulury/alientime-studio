@@ -31,12 +31,19 @@ def iso(dt: datetime | None) -> str | None:
 
 
 def _sqlite_pragmas(dbapi_conn, _record) -> None:
+    import os
+
     cur = dbapi_conn.cursor()
     cur.execute("PRAGMA foreign_keys=ON")
-    cur.execute("PRAGMA journal_mode=WAL")
-    cur.execute("PRAGMA busy_timeout=15000")
-    cur.execute("PRAGMA synchronous=NORMAL")
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        cur.execute("PRAGMA journal_mode=MEMORY")
+        cur.execute("PRAGMA synchronous=OFF")
+    else:
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=15000")
+        cur.execute("PRAGMA synchronous=NORMAL")
     cur.close()
+
 
 
 def get_engine() -> Engine:

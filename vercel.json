@@ -4,7 +4,8 @@
     "app": {
       "root": ".",
       "framework": "fastapi",
-      "entrypoint": "api/index.py"
+      "entrypoint": "api/index.py",
+      "installCommand": "pip install -r api/requirements.txt"
     },
     "frontend": {
       "root": "frontend",
